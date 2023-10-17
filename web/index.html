@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Chat</title>
+    <style>
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"] {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        button {
+            margin-top: 10px;
+        }
+        #chat {
+            margin-top: 20px;
+            overflow-y: scroll;
+            height: calc(100vh - 150px);
+        }
+        .message {
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+        #input-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px;
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+<div id="chat"></div>
+<div id="input-container">
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" value="test1">
+    <label for="message">Message:</label>
+    <input type="text" id="message" name="message" value="test2">
+    <button id="send">Send</button>
+</div>
+<script>
+    //todo Разобраться почему тут 8080
+    const socket = new WebSocket('ws://localhost:8080/ws');
+    const chat = document.getElementById('chat');
+    const inputContainer = document.getElementById('input-container');
+
+    socket.onmessage = function(event) {
+        var msg = JSON.parse(event.data);
+        var messageDiv = document.createElement('div');
+        messageDiv.classList.add('message');
+        messageDiv.textContent = new Date(msg.time * 1000).toLocaleString();
+        var textDiv = document.createElement('div');
+        textDiv.textContent = msg.username + ': ' + msg.message;
+        chat.appendChild(messageDiv);
+        chat.appendChild(textDiv);
+        inputContainer.scrollIntoView(false); // Scroll to the bottom of the page
+    };
+
+
+    socket.addEventListener('close', (event) => {
+        console.log('WebSocket closed:', event);
+    });
+
+    socket.addEventListener('error', (event) => {
+        console.error('WebSocket error:', event);
+    });
+
+    socket.addEventListener('open', (event) => {
+        console.log('WebSocket connected');
+    });
+
+    socket.addEventListener('message', (event) => {
+        console.log(`WebSocket message received: ${event.data}`);
+    });
+
+    socket.addEventListener('error', (event) => {
+        console.error('WebSocket error:', event);
+    });
+
+    const sendButton = document.getElementById('send');
+    sendButton.addEventListener('click', (event) => {
+        const username = document.getElementById('username').value;
+        const message = document.getElementById('message').value;
+        if (username.trim() === '' || message.trim() === '') {
+            alert('Please enter a username and a message');
+            return;
+        }
+        const data = {
+            username: username,
+            message: message
+        };
+        socket.send(JSON.stringify(data));
+    });
+</script>
+</body>
+</html>
