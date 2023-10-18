@@ -8,7 +8,10 @@
 
 
 ## How to install
-go get github.com/gorilla/websocket
+- cp .env.example .env
+- docker-compose up --build
+- run migrations
+- Profit!
 
 
 ## migrations in go

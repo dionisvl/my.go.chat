@@ -12,10 +12,10 @@ import (
 )
 
 type Message struct {
-	Id       int64  `json:"id"`
-	Username string `json:"username"`
-	Message  string `json:"message"`
-	Time     int64  `json:"time"`
+	Id       int64     `json:"id"`
+	Username string    `json:"username"`
+	Message  string    `json:"message"`
+	Time     time.Time `json:"time" db:"time" sql:"type:datetime"`
 }
 
 var db *sql.DB
@@ -41,6 +41,7 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	err := os.Chdir("/go/src/app")
+
 	log.Println("Starting server... ok")
 	log.Println("Starting root route...")
 	http.HandleFunc("/", handleRoot)
@@ -86,26 +87,21 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	// Add the client to the list of connected clients
 	clients[conn] = true
 
-	// Send the welcome message to the client
-	welcomeMessage := os.Getenv("WELCOME_MESSAGE")
-	welcomeMsg := Message{
-		Username: "GolangWebSocketServer",
-		Message:  welcomeMessage,
-		Time:     time.Now().Unix(),
-	}
-	err = conn.WriteJSON(welcomeMsg)
-	if err != nil {
-		log.Println("Failed to send message:", err)
-		delete(clients, conn)
-		return
-	}
-
 	// Load the last 50 messages from the database
 	messages, err := loadMessages(15)
 	if err != nil {
 		log.Println("Failed to load messages:", err)
 		return
 	}
+
+	// Add the welcome message to the all message list
+	welcomeMessageText := os.Getenv("WELCOME_MESSAGE")
+	welcomeMsg := Message{
+		Username: "GolangWebSocketServer",
+		Message:  welcomeMessageText,
+		Time:     time.Now().Local(),
+	}
+	messages = append(messages, welcomeMsg)
 
 	// Send the messages to the client
 	for _, msg := range messages {
@@ -132,7 +128,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Received message from %s: %s", msg.Username, msg.Message)
 
 		// Add a timestamp to the message
-		msg.Time = time.Now().Unix()
+		msg.Time = time.Now().Local()
 
 		// Save the message to the database
 		err = saveMessage(msg)
@@ -168,7 +164,7 @@ func saveMessage(msg Message) error {
 // Load the last `limit` messages from the database
 func loadMessages(limit int) ([]Message, error) {
 	// Query the database for the last `limit` messages
-	rows, err := db.Query("SELECT * FROM messages ORDER BY time LIMIT ?", limit)
+	rows, err := db.Query("SELECT id, username, message, time FROM messages ORDER BY time LIMIT ?", limit)
 	if err != nil {
 		return nil, err
 	}
@@ -178,10 +174,17 @@ func loadMessages(limit int) ([]Message, error) {
 	messages := make([]Message, 0)
 	for rows.Next() {
 		var msg Message
-		err := rows.Scan(&msg.Id, &msg.Username, &msg.Message, &msg.Time)
+		var timeStr string
+		err := rows.Scan(&msg.Id, &msg.Username, &msg.Message, &timeStr)
 		if err != nil {
 			return nil, err
 		}
+
+		msg.Time, err = time.ParseInLocation("2006-01-02 15:04:05", timeStr, time.Local)
+		if err != nil {
+			return nil, err
+		}
+
 		messages = append(messages, msg)
 	}
 

@@ -4,13 +4,15 @@ services:
   app:
     build: .
     ports:
-      - "8080:8080"
+      - ${HOST_PORT}:8080
+    volumes:
+      - ${APP_DIR_HOST}:${APP_DIR_CONTAINER}
     depends_on:
       - mysql-chat
     environment:
-      - DB_HOST=mysql-chat
-      - DB_PORT=3306
-      - DB_USER=root
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
       - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - DB_NAME=${MYSQL_DATABASE}
       - WELCOME_MESSAGE=${WELCOME_MESSAGE}

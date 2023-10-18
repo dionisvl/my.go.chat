@@ -19,11 +19,15 @@
             margin-top: 20px;
             overflow-y: scroll;
             height: calc(100vh - 150px);
+            display: flex;
+            flex-direction: column-reverse;
         }
         .message {
             margin-bottom: 5px;
             font-size: 12px;
             color: #666;
+            animation: move-up 0.5s ease-out;
+            animation-fill-mode: forwards;
         }
         #input-container {
             position: fixed;
@@ -32,6 +36,16 @@
             width: 100%;
             padding: 10px;
             background-color: #f0f0f0;
+        }
+        @keyframes move-up {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
     </style>
 </head>
@@ -45,8 +59,7 @@
     <button id="send">Send</button>
 </div>
 <script>
-    //todo Разобраться почему тут 8080
-    const socket = new WebSocket('ws://localhost:8080/ws');
+    const socket = new WebSocket('ws://localhost:8011/ws');
     const chat = document.getElementById('chat');
     const inputContainer = document.getElementById('input-container');
 
@@ -54,12 +67,12 @@
         var msg = JSON.parse(event.data);
         var messageDiv = document.createElement('div');
         messageDiv.classList.add('message');
-        messageDiv.textContent = new Date(msg.time * 1000).toLocaleString();
+        messageDiv.textContent = new Date(msg.time).toLocaleString();
         var textDiv = document.createElement('div');
         textDiv.textContent = msg.username + ': ' + msg.message;
-        chat.appendChild(messageDiv);
-        chat.appendChild(textDiv);
-        inputContainer.scrollIntoView(false); // Scroll to the bottom of the page
+        chat.insertBefore(textDiv, chat.firstChild);
+        chat.insertBefore(messageDiv, chat.firstChild);
+        chat.scrollTop = 0; // Scroll to the top of the chat window
     };
 
 
@@ -81,6 +94,12 @@
 
     socket.addEventListener('error', (event) => {
         console.error('WebSocket error:', event);
+    });
+
+    // Make smooth movement of messages to the top border
+    const messages = document.querySelectorAll('.message');
+    messages.forEach((message) => {
+        message.style.animationTimingFunction = 'ease-out';
     });
 
     const sendButton = document.getElementById('send');
