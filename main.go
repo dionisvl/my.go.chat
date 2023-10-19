@@ -100,7 +100,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	clients[conn] = true
 
 	// Load the last 50 messages from the database
-	messages, err := loadMessages(15)
+	messages, err := loadMessages(100)
 	if err != nil {
 		log.Println("Failed to load messages:", err)
 		return
@@ -177,7 +177,18 @@ func saveMessage(msg Message) error {
 // Load the last `limit` messages from the database
 func loadMessages(limit int) ([]Message, error) {
 	// Query the database for the last `limit` messages
-	rows, err := db.Query("SELECT id, username, message, time, color FROM messages ORDER BY time LIMIT ?", limit)
+	query := fmt.Sprintf(`
+	SELECT id, username, message, time, color
+	FROM (
+		SELECT id, username, message, time, color
+		FROM messages
+		ORDER BY time DESC
+		LIMIT %d
+	) AS subquery
+	ORDER BY time ASC
+	`, limit)
+
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
