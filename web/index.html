@@ -1,20 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>WebSocket Chat</title>
     <style>
         label {
             display: block;
-            margin-bottom: 5px;
         }
+
         input[type="text"] {
             width: 100%;
-            margin-bottom: 10px;
         }
-        button {
-            margin-top: 10px;
-        }
+
         #chat {
             margin-top: 20px;
             overflow-y: scroll;
@@ -22,21 +19,32 @@
             display: flex;
             flex-direction: column-reverse;
         }
-        .message {
+
+        .message-date {
             margin-bottom: 5px;
             font-size: 12px;
             color: #666;
             animation: move-up 0.5s ease-out;
             animation-fill-mode: forwards;
         }
+
+        .username {
+            padding: 3px;
+            margin-bottom: 3px;
+            border-radius: 0.3em;
+        }
+
         #input-container {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            padding: 10px;
-            background-color: #f0f0f0;
+            border: rgb(255, 0, 0) 3px;
+            border-radius: 0.3em;
+            padding: 5px;
+            background-color: beige;
         }
+
         @keyframes move-up {
             from {
                 transform: translateY(100%);
@@ -58,20 +66,61 @@
     <input type="text" id="message" name="message" value="test2">
     <button id="send">Send</button>
 </div>
-<script>
-    const socket = new WebSocket('ws://localhost:8011/ws');
-    const chat = document.getElementById('chat');
-    const inputContainer = document.getElementById('input-container');
 
-    socket.onmessage = function(event) {
-        var msg = JSON.parse(event.data);
-        var messageDiv = document.createElement('div');
-        messageDiv.classList.add('message');
-        messageDiv.textContent = new Date(msg.time).toLocaleString();
-        var textDiv = document.createElement('div');
-        textDiv.textContent = msg.username + ': ' + msg.message;
-        chat.insertBefore(textDiv, chat.firstChild);
+<script>
+    // Create an invisible button that clears the local storage when pressed
+    const clearButton = document.createElement('button');
+    clearButton.backgroundColor = 'red';
+    // clearButton.style.display = 'none';
+    clearButton.addEventListener('click', function () {
+        localStorage.clear();
+        console.log('Local storage cleared');
+    });
+    document.body.appendChild(clearButton);
+
+    const socket = new WebSocket('ws://' + window.location.hostname + ':8011/ws');
+    const chat = document.getElementById('chat');
+
+    // This function first check color from local storage and if this color is invalid then generate new
+    // Todo: move this logic to server and store color in cookie or DB
+    function getRandomColor() {
+        const letters = '89ABCDEF';
+        let color = localStorage.getItem('color'); // Get the color from local storage
+        if (!color || !/^#[0-9A-F]{6}$/i.test(color)) { // Check if the color is invalid or not stored
+            color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 8)];
+            }
+            localStorage.setItem('color', color); // Save the new color to local storage
+        }
+        return color;
+    }
+
+    const thisUserColor = getRandomColor();
+    console.log('Current color:', thisUserColor);
+
+    socket.onmessage = function (event) {
+        const msg = JSON.parse(event.data);
+
+        // Block of username
+        const usernameSpan = document.createElement('span');
+
+        // Block of message of this user
+        const messageDiv = document.createElement('div');
+        usernameSpan.textContent = msg.username + ':';
+        usernameSpan.classList.add('username');
+        messageDiv.textContent = ' ' + msg.message;
+        usernameSpan.style.backgroundColor = msg.color; // Set the background color of the username
+        usernameSpan.style.color = '#000'; // Set the text color to white for better contrast
+        messageDiv.insertBefore(usernameSpan, messageDiv.firstChild);
+
+        // block of Date of this message
+        const messageDateDiv = document.createElement('div');
+        messageDateDiv.classList.add('message-date');
+        messageDateDiv.textContent = new Date(msg.time).toLocaleString();
+
         chat.insertBefore(messageDiv, chat.firstChild);
+        chat.insertBefore(messageDateDiv, chat.firstChild);
         chat.scrollTop = 0; // Scroll to the top of the chat window
     };
 
@@ -106,13 +155,15 @@
     sendButton.addEventListener('click', (event) => {
         const username = document.getElementById('username').value;
         const message = document.getElementById('message').value;
+
         if (username.trim() === '' || message.trim() === '') {
             alert('Please enter a username and a message');
             return;
         }
         const data = {
             username: username,
-            message: message
+            message: message,
+            color: thisUserColor
         };
         socket.send(JSON.stringify(data));
     });

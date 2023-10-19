@@ -6,6 +6,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/websocket"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"time"
@@ -16,6 +17,7 @@ type Message struct {
 	Username string    `json:"username"`
 	Message  string    `json:"message"`
 	Time     time.Time `json:"time" db:"time" sql:"type:datetime"`
+	Color    string    `json:"color" db:"color" sql:"type:string"`
 }
 
 var db *sql.DB
@@ -25,6 +27,16 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
+}
+
+func getRandomColor() string {
+	rand.Seed(time.Now().UnixNano())
+	letters := "6789ABCDEF"
+	color := "#"
+	for i := 0; i < 6; i++ {
+		color += string(letters[rand.Intn(len(letters))])
+	}
+	return color
 }
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
@@ -100,6 +112,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		Username: "GolangWebSocketServer",
 		Message:  welcomeMessageText,
 		Time:     time.Now().Local(),
+		Color:    getRandomColor(),
 	}
 	messages = append(messages, welcomeMsg)
 
@@ -153,7 +166,7 @@ func saveMessage(msg Message) error {
 		return fmt.Errorf("database connection is nil")
 	}
 	// Insert the message into the database
-	_, err := db.Exec("INSERT INTO messages (username, message, time) VALUES (?, ?, ?)", msg.Username, msg.Message, msg.Time)
+	_, err := db.Exec("INSERT INTO messages (username, message, time, color) VALUES (?, ?, ?, ?)", msg.Username, msg.Message, msg.Time, msg.Color)
 	if err != nil {
 		log.Println("Failed to execute database query:", err)
 		return err
@@ -164,7 +177,7 @@ func saveMessage(msg Message) error {
 // Load the last `limit` messages from the database
 func loadMessages(limit int) ([]Message, error) {
 	// Query the database for the last `limit` messages
-	rows, err := db.Query("SELECT id, username, message, time FROM messages ORDER BY time LIMIT ?", limit)
+	rows, err := db.Query("SELECT id, username, message, time, color FROM messages ORDER BY time LIMIT ?", limit)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +188,7 @@ func loadMessages(limit int) ([]Message, error) {
 	for rows.Next() {
 		var msg Message
 		var timeStr string
-		err := rows.Scan(&msg.Id, &msg.Username, &msg.Message, &timeStr)
+		err := rows.Scan(&msg.Id, &msg.Username, &msg.Message, &timeStr, &msg.Color)
 		if err != nil {
 			return nil, err
 		}
