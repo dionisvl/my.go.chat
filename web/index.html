@@ -4,23 +4,42 @@
     <meta charset="UTF-8">
     <title>WebSocket Chat</title>
     <style>
-        label {
-            display: block;
-        }
-
-        input[type="text"] {
-            width: 100%;
-        }
-
-        #chat {
+        #chat-box-container {
+            display: flex;
+            justify-content: space-between;
             margin-top: 20px;
             overflow-y: scroll;
-            height: calc(100vh - 150px);
-            display: flex;
-            flex-direction: column-reverse;
+            flex-direction: column;
+            background-color: lightblue;
+            border-radius: 0.3em;
+            width: 200px;
+            height: 400px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.6s ease;
+            z-index: 1; /* значение z-index больше, чем у большинства других элементов */
+            position: relative;
         }
 
-        .message-date {
+        #chat_input_container {
+            display: flex;
+            justify-content: space-between;
+            flex-direction: column;
+            position: relative;
+            bottom: 0;
+            left: 0;
+            width: auto;
+            max-width: 200px;
+            border: rgb(255, 0, 0) 3px;
+            border-radius: 0.3em;
+            padding: 5px;
+            background-color: beige;
+        }
+
+        .chat_input[type="text"] {
+            width: auto;
+        }
+
+        .chat_message_date {
             margin-bottom: 5px;
             font-size: 12px;
             color: #666;
@@ -28,21 +47,10 @@
             animation-fill-mode: forwards;
         }
 
-        .username {
+        .chat_username {
             padding: 3px;
             margin-bottom: 3px;
             border-radius: 0.3em;
-        }
-
-        #input-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            border: rgb(255, 0, 0) 3px;
-            border-radius: 0.3em;
-            padding: 5px;
-            background-color: beige;
         }
 
         @keyframes move-up {
@@ -58,28 +66,53 @@
     </style>
 </head>
 <body>
-<div id="chat"></div>
-<div id="input-container">
-    <label for="username">Username:</label>
-    <input type="text" id="username" name="username" value="test1">
-    <label for="message">Message:</label>
-    <input type="text" id="message" name="message" value="test2">
-    <button id="send">Send</button>
+<div id="chat-box-container">
+    <div id="chat-message-list">
+    </div>
+    <div id="chat_input_container">
+        <label class="chat_label" for="chat_username">Username:</label>
+        <input class="chat_input" type="text" id="chat_username" name="chat_username" value="test1">
+        <label class="chat_label" for="chat_message">Message:</label>
+        <input class="chat_input" type="text" id="chat_message" name="chat_message" value="test2">
+        <button id="chat_send">Send</button>
+        <button id="toggleBtn">Увеличить div</button>
+    </div>
 </div>
 
 <script>
+    const socket = new WebSocket('ws://' + window.location.hostname + ':8011/ws');
+    const chat = document.getElementById('chat-message-list');
+    const btn = document.getElementById('toggleBtn');
+
+    chatContainer = document.getElementById('chat-box-container');
+
+    let isExpanded = false;
+
+    btn.addEventListener('click', () => {
+        if (!isExpanded) {
+            chatContainer.style.width = '90vw';
+            chatContainer.style.height = '90vh';
+            chatContainer.style.zIndex = '9999';
+        } else {
+            chatContainer.style.width = '';
+            chatContainer.style.height = '';
+            chatContainer.style.zIndex = '1';
+        }
+        chatContainer.scrollTop = chat.scrollHeight;
+        isExpanded = !isExpanded;
+    });
+
     // Create an invisible button that clears the local storage when pressed
     const clearButton = document.createElement('button');
     clearButton.backgroundColor = 'red';
-    // clearButton.style.display = 'none';
+    clearButton.textContent = '@';
+    clearButton.style.width = '30px';
     clearButton.addEventListener('click', function () {
         localStorage.clear();
         console.log('Local storage cleared');
     });
-    document.body.appendChild(clearButton);
+    document.getElementById('chat_input_container').appendChild(clearButton);
 
-    const socket = new WebSocket('ws://' + window.location.hostname + ':8011/ws');
-    const chat = document.getElementById('chat');
 
     // This function first check color from local storage and if this color is invalid then generate new
     // Todo: move this logic to server and store color in cookie or DB
@@ -108,7 +141,7 @@
         // Block of message of this user
         const messageDiv = document.createElement('div');
         usernameSpan.textContent = msg.username + ':';
-        usernameSpan.classList.add('username');
+        usernameSpan.classList.add('chat_username');
         messageDiv.textContent = ' ' + msg.message;
         usernameSpan.style.backgroundColor = msg.color; // Set the background color of the username
         usernameSpan.style.color = '#000'; // Set the text color to white for better contrast
@@ -116,12 +149,12 @@
 
         // block of Date of this message
         const messageDateDiv = document.createElement('div');
-        messageDateDiv.classList.add('message-date');
+        messageDateDiv.classList.add('chat_message_date');
         messageDateDiv.textContent = new Date(msg.time).toLocaleString();
 
-        chat.insertBefore(messageDiv, chat.firstChild);
-        chat.insertBefore(messageDateDiv, chat.firstChild);
-        chat.scrollTop = 0; // Scroll to the top of the chat window
+        chat.insertAdjacentElement('beforeend', messageDiv);
+        chat.insertAdjacentElement('beforeend', messageDateDiv);
+        chatContainer.scrollTop = chat.scrollHeight; // Scroll to the bottom of the chat window
     };
 
 
@@ -137,7 +170,7 @@
         console.log('WebSocket connected');
     });
 
-    socket.addEventListener('message', (event) => {
+    socket.addEventListener('chat_message', (event) => {
         console.log(`WebSocket message received: ${event.data}`);
     });
 
@@ -146,15 +179,15 @@
     });
 
     // Make smooth movement of messages to the top border
-    const messages = document.querySelectorAll('.message');
+    const messages = document.querySelectorAll('.chat_message');
     messages.forEach((message) => {
         message.style.animationTimingFunction = 'ease-out';
     });
 
-    const sendButton = document.getElementById('send');
+    const sendButton = document.getElementById('chat_send');
     sendButton.addEventListener('click', (event) => {
-        const username = document.getElementById('username').value;
-        const message = document.getElementById('message').value;
+        const username = document.getElementById('chat_username').value;
+        const message = document.getElementById('chat_message').value;
 
         if (username.trim() === '' || message.trim() === '') {
             alert('Please enter a username and a message');
@@ -169,11 +202,11 @@
     });
 
     // send message by Enter
-    const messageInput = document.getElementById('message');
+    const messageInput = document.getElementById('chat_input_container');
     messageInput.addEventListener('keydown', function (event) {
         if (event.key === 'Enter') {
             event.preventDefault(); // Prevent the default behavior of the Enter key
-            const sendButton = document.getElementById('send');
+            const sendButton = document.getElementById('chat_send');
             sendButton.click(); // Simulate a click on the send button
         }
     });

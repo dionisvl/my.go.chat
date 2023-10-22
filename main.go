@@ -179,14 +179,9 @@ func loadMessages(limit int) ([]Message, error) {
 	// Query the database for the last `limit` messages
 	query := fmt.Sprintf(`
 	SELECT id, username, message, time, color
-	FROM (
-		SELECT id, username, message, time, color
 		FROM messages
 		ORDER BY time DESC
-		LIMIT %d
-	) AS subquery
-	ORDER BY time ASC
-	`, limit)
+		LIMIT %d`, limit)
 
 	rows, err := db.Query(query)
 	if err != nil {
