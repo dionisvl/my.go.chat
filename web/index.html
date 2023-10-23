@@ -10,7 +10,7 @@
             margin-top: 20px;
             overflow-y: scroll;
             flex-direction: column;
-            background-color: lightblue;
+            background-color: lavender;
             border-radius: 0.3em;
             width: 200px;
             height: 400px;
@@ -21,9 +21,6 @@
         }
 
         #chat_input_container {
-            display: flex;
-            justify-content: space-between;
-            flex-direction: column;
             position: relative;
             bottom: 0;
             left: 0;
@@ -32,7 +29,7 @@
             border: rgb(255, 0, 0) 3px;
             border-radius: 0.3em;
             padding: 5px;
-            background-color: beige;
+            background-color: lightgray;
         }
 
         .chat_input[type="text"] {
@@ -41,15 +38,15 @@
 
         .chat_message_date {
             margin-bottom: 5px;
-            font-size: 12px;
-            color: #666;
+            font-size: 9px;
+            color: darkgray;
             animation: move-up 0.5s ease-out;
             animation-fill-mode: forwards;
         }
 
         .chat_username {
-            padding: 3px;
-            margin-bottom: 3px;
+            padding: 2px;
+            margin-bottom: 2px;
             border-radius: 0.3em;
         }
 
@@ -63,6 +60,12 @@
                 opacity: 1;
             }
         }
+
+        #chat-message-list {
+            font-family: Verdana, serif;
+            font-size: 12px;
+            padding: 2px;
+        }
     </style>
 </head>
 <body>
@@ -75,7 +78,7 @@
         <label class="chat_label" for="chat_message">Message:</label>
         <input class="chat_input" type="text" id="chat_message" name="chat_message" value="test2">
         <button id="chat_send">Send</button>
-        <button id="toggleBtn">Увеличить div</button>
+        <button id="toggleBtn">◀ open ▶</button>
     </div>
 </div>
 
@@ -132,7 +135,9 @@
     const thisUserColor = getRandomColor();
     console.log('Current color:', thisUserColor);
 
+    let count = 0;
     socket.onmessage = function (event) {
+        count++;
         const msg = JSON.parse(event.data);
 
         // Block of username
@@ -156,7 +161,6 @@
         chat.insertAdjacentElement('beforeend', messageDateDiv);
         chatContainer.scrollTop = chat.scrollHeight; // Scroll to the bottom of the chat window
     };
-
 
     socket.addEventListener('close', (event) => {
         console.log('WebSocket closed:', event);

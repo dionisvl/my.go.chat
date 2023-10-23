@@ -180,7 +180,7 @@ func loadMessages(limit int) ([]Message, error) {
 	query := fmt.Sprintf(`
 	SELECT id, username, message, time, color
 		FROM messages
-		ORDER BY time DESC
+		ORDER BY time
 		LIMIT %d`, limit)
 
 	rows, err := db.Query(query)
