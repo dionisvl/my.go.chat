@@ -1,18 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>WebSocket Chat</title>
     <style>
         #chat-box-container {
             display: flex;
             justify-content: space-between;
             margin-top: 20px;
-            overflow-y: scroll;
+            overflow-y: auto;
             flex-direction: column;
-            background-color: lavender;
+            background-color: white;
             border-radius: 0.3em;
-            width: 200px;
+            /*width: 170px;*/
+            width: auto;
             height: 400px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             transition: all 0.6s ease;
@@ -25,29 +21,29 @@
             bottom: 0;
             left: 0;
             width: auto;
-            max-width: 200px;
             border: rgb(255, 0, 0) 3px;
             border-radius: 0.3em;
             padding: 5px;
             background-color: lightgray;
         }
 
+        label.chat_label {
+            width: 85px;
+        }
+
         .chat_input[type="text"] {
-            width: auto;
+            max-width: 130px;
         }
 
         .chat_message_date {
             margin-bottom: 5px;
             font-size: 9px;
             color: darkgray;
-            animation: move-up 0.5s ease-out;
-            animation-fill-mode: forwards;
         }
 
         .chat_username {
-            padding: 2px;
-            margin-bottom: 2px;
-            border-radius: 0.3em;
+            font-weight: bold;
+            line-height: 1.25rem
         }
 
         @keyframes move-up {
@@ -66,20 +62,43 @@
             font-size: 12px;
             padding: 2px;
         }
+
+        .chat_message {
+            animation: move-up 0.5s ease-out;
+            animation-fill-mode: forwards;
+        }
     </style>
-</head>
-<body>
-<div id="chat-box-container">
+
+
+    <div id="chat-box-container">
     <div id="chat-message-list">
     </div>
     <div id="chat_input_container">
-        <label class="chat_label" for="chat_username">Username:</label>
-        <input class="chat_input" type="text" id="chat_username" name="chat_username" value="test1">
-        <label class="chat_label" for="chat_message">Message:</label>
-        <input class="chat_input" type="text" id="chat_message" name="chat_message" value="test2">
-        <button id="chat_send">Send</button>
-        <button id="toggleBtn">◀ open ▶</button>
+        <div class="input-group input-group-sm mb-sm-1">
+            <div class="input-group-prepend">
+                <label class="chat_label input-group-text" for="chat_username" id="chat_username_label">
+                    Username:
+                </label>
+            </div>
+            <input aria-describedby="chat_username_label" class="chat_input form-control" id="chat_username" name="chat_username"
+                   type="text"
+                   value="test1">
+
+        </div>
+        <div class="input-group input-group-sm mb-sm-1">
+            <div class="input-group-prepend">
+                <label class="chat_label input-group-text" for="chat_message" id="chat_message_label">
+                    Message:
+                </label>
+            </div>
+            <input aria-describedby="chat_message_label" class="chat_input form-control" id="chat_message" name="chat_username"
+                   type="text"
+                   value="test message">
+        </div>
+        <button class="btn btn-primary btn-sm" id="chat_send" type="button">Send</button>
+        <button class="btn btn-light btn-sm" id="toggleBtn" type="button">◃open▹</button>
     </div>
+
 </div>
 
 <script>
@@ -101,10 +120,14 @@
             chatContainer.style.height = '';
             chatContainer.style.zIndex = '1';
         }
-        chatContainer.scrollTop = chat.scrollHeight;
+        scrollBottom()
         isExpanded = !isExpanded;
     });
 
+    // Scroll to the bottom of the chat window
+    function scrollBottom() {
+        chatContainer.scrollTop = chat.scrollHeight;
+    }
     // Create an invisible button that clears the local storage when pressed
     const clearButton = document.createElement('button');
     clearButton.backgroundColor = 'red';
@@ -120,7 +143,7 @@
     // This function first check color from local storage and if this color is invalid then generate new
     // Todo: move this logic to server and store color in cookie or DB
     function getRandomColor() {
-        const letters = '89ABCDEF';
+        const letters = '123456789';
         let color = localStorage.getItem('color'); // Get the color from local storage
         if (!color || !/^#[0-9A-F]{6}$/i.test(color)) { // Check if the color is invalid or not stored
             color = '#';
@@ -145,11 +168,11 @@
 
         // Block of message of this user
         const messageDiv = document.createElement('div');
+        messageDiv.classList.add('chat_message')
         usernameSpan.textContent = msg.username + ':';
         usernameSpan.classList.add('chat_username');
         messageDiv.textContent = ' ' + msg.message;
-        usernameSpan.style.backgroundColor = msg.color; // Set the background color of the username
-        usernameSpan.style.color = '#000'; // Set the text color to white for better contrast
+        usernameSpan.style.color = msg.color; // Set the text color to color of the username
         messageDiv.insertBefore(usernameSpan, messageDiv.firstChild);
 
         // block of Date of this message
@@ -157,9 +180,9 @@
         messageDateDiv.classList.add('chat_message_date');
         messageDateDiv.textContent = new Date(msg.time).toLocaleString();
 
+        messageDiv.insertAdjacentElement('beforeend', messageDateDiv);
         chat.insertAdjacentElement('beforeend', messageDiv);
-        chat.insertAdjacentElement('beforeend', messageDateDiv);
-        chatContainer.scrollTop = chat.scrollHeight; // Scroll to the bottom of the chat window
+        scrollBottom()
     };
 
     socket.addEventListener('close', (event) => {
@@ -215,5 +238,3 @@
         }
     });
 </script>
-</body>
-</html>

@@ -63,10 +63,12 @@ func main() {
 	log.Println("... ok")
 
 	log.Println("Starting mysql logic...")
+	dbUser := os.Getenv("DB_USER")
 	dbPass := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
 	dbHost := os.Getenv("DB_HOST")
-	db, err = sql.Open("mysql", fmt.Sprintf("root:%s@tcp(%s:3306)/%s", dbPass, dbHost, dbName))
+	dbPort := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
+	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPass, dbHost, dbPort, dbName))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -109,7 +111,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	// Add the welcome message to the all message list
 	welcomeMessageText := os.Getenv("WELCOME_MESSAGE")
 	welcomeMsg := Message{
-		Username: "GolangWebSocketServer",
+		Username: "Golang Server",
 		Message:  welcomeMessageText,
 		Time:     time.Now().Local(),
 		Color:    getRandomColor(),

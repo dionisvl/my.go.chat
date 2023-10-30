@@ -1,9 +1,9 @@
 # My Go Chat
 
-Это Websocket чат совсем простой. 
+Это Websocket чат совсем простой.
 - MySQL
-- GoLang 
-- Docker 
+- GoLang
+- Docker
 - JS/HTML/CSS
 
 
@@ -23,9 +23,7 @@
 - Profit!
 
 ### mig down
-
 - `migrate -source "file://migrations" -database "mysql://root:password@tcp(localhost:3310)/chat" down`
 
 ### mig fix
-
 - `migrate -source "file://migrations" -database "mysql://root:password@tcp(localhost:3310)/chat" force 4`
