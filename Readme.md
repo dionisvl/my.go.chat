@@ -1,10 +1,11 @@
 # My Go Chat
 
-Это Websocket чат совсем простой.
+This is Websocket super simple chat.
 - MySQL
 - GoLang
 - Docker
 - JS/HTML/CSS
+- microservice edition
 
 
 ## How to install

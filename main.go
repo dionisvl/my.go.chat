@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -102,33 +103,15 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	clients[conn] = true
 
 	// Load the last 50 messages from the database
-	messages, err := loadMessages(100)
+	messages, err := loadMessages(50)
 	if err != nil {
 		log.Println("Failed to load messages:", err)
 		return
 	}
+	sendMessages(messages, conn)
+	sendWelcome(conn)
 
-	// Add the welcome message to the all message list
-	welcomeMessageText := os.Getenv("WELCOME_MESSAGE")
-	welcomeMsg := Message{
-		Username: "Golang Server",
-		Message:  welcomeMessageText,
-		Time:     time.Now().Local(),
-		Color:    getRandomColor(),
-	}
-	messages = append(messages, welcomeMsg)
-
-	// Send the messages to the client
-	for _, msg := range messages {
-		err = conn.WriteJSON(msg)
-		if err != nil {
-			log.Println("Failed to send message:", err)
-			delete(clients, conn)
-			break
-		}
-	}
-
-	// Read messages from the WebSocket connection
+	// Listen messages from the WebSocket connection
 	for {
 		// Read a message from the WebSocket connection
 		var msg Message
@@ -161,6 +144,43 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+}
+
+// Send the message list to the client
+func sendMessages(messages []Message, conn *websocket.Conn) {
+	for _, msg := range messages {
+		err := conn.WriteJSON(msg)
+		if err != nil {
+			log.Println("Failed to send message:", err)
+			delete(clients, conn)
+			break
+		}
+	}
+}
+
+// Send special welcome text with timeout
+func sendWelcome(conn *websocket.Conn) {
+	welcomeMessageText := os.Getenv("WELCOME_MESSAGE")
+	welcomeMsg := Message{
+		Username: "Golang Server",
+		Message:  welcomeMessageText,
+		Time:     time.Now().Local(),
+		Color:    getRandomColor(),
+	}
+
+	// Get the welcome timeout from the environment
+	welcomeTimeout, err := strconv.Atoi(os.Getenv("WELCOME_TIMEOUT"))
+	if err != nil {
+		log.Println("Failed to parse WELCOME_TIMEOUT:", err)
+		return
+	}
+
+	// Schedule the welcome message to be sent after the welcome timeout
+	time.AfterFunc(time.Duration(welcomeTimeout)*time.Second, func() {
+		messages := make([]Message, 0)
+		messages = append(messages, welcomeMsg)
+		sendMessages(messages, conn)
+	})
 }
 
 func saveMessage(msg Message) error {
