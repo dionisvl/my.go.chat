@@ -1,6 +1,17 @@
 version: '3'
 
 services:
+    web:
+        image: nginx:1.25.2-alpine-slim
+        restart: 'no'
+        ports:
+            - ${NGINX_HOST_PORT}:80
+        volumes:
+            - ./web:/usr/share/nginx/html
+            - ./nginx.conf:/etc/nginx/nginx.conf
+        depends_on:
+            - app
+
     app:
         build: .
         ports:
@@ -16,16 +27,7 @@ services:
             - WELCOME_MESSAGE=${WELCOME_MESSAGE}
             - WELCOME_TIMEOUT=${WELCOME_TIMEOUT}
 
-    web:
-        image: nginx:1.25.2-alpine-slim
-        restart: 'no'
-        ports:
-            - ${NGINX_HOST_PORT}:80
-        volumes:
-            - ./web:/usr/share/nginx/html
-            - ./nginx.conf:/etc/nginx/nginx.conf
-        depends_on:
-            - app
+
 
         # uncomment only if you want standalone webChat instance
     #  mysql-chat:
