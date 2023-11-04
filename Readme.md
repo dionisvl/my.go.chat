@@ -7,6 +7,9 @@ This is Websocket super simple chat.
 - JS/HTML/CSS
 - microservice edition
 
+## Route list
+- HOST:PORT/ - index page
+- HOST:PORT/ws - web socket listener
 
 ## How to install
 - cp .env.example .env
