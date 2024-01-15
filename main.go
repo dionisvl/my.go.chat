@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/TwiN/go-away"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/websocket"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -137,6 +139,9 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 		// Broadcast the message to all connected clients
 		for client := range clients {
+			msg.Username = censor(msg.Username)
+			msg.Message = censor(msg.Message)
+
 			err = client.WriteJSON(msg)
 			if err != nil {
 				log.Println("Failed to broadcast message:", err)
@@ -146,9 +151,20 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func censor(str string) string {
+	// todo: extract "goaway" init from this func.
+	goaway.DefaultProfanities = append(goaway.DefaultProfanities, "хуй", "сука", "ублюдок", "пизда", "сучка")
+	str = strings.ReplaceAll(str, "хуй", "***")
+	str = goaway.Censor(str)
+	return str
+}
+
 // Send the message list to the client
 func sendMessages(messages []Message, conn *websocket.Conn) {
 	for _, msg := range messages {
+		msg.Username = censor(msg.Username)
+		msg.Message = censor(msg.Message)
+
 		err := conn.WriteJSON(msg)
 		if err != nil {
 			log.Println("Failed to send message:", err)
@@ -200,10 +216,14 @@ func saveMessage(msg Message) error {
 func loadMessages(limit int) ([]Message, error) {
 	// Query the database for the last `limit` messages
 	query := fmt.Sprintf(`
-	SELECT id, username, message, time, color
+	SELECT * FROM (
+		SELECT id, username, message, time, color
 		FROM messages
-		ORDER BY time
-		LIMIT %d`, limit)
+		ORDER BY time DESC
+		LIMIT %d
+	) AS sub
+	ORDER BY time ASC
+`, limit)
 
 	rows, err := db.Query(query)
 	if err != nil {
