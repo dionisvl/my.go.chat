@@ -78,6 +78,9 @@ func main() {
 	defer db.Close()
 	log.Println("... ok")
 
+	// Load profanities from .env
+	loadProfanities()
+
 	log.Println("Starting ListenAndServe route...")
 	err = http.ListenAndServe(":8080", nil)
 	if err != nil {
@@ -87,6 +90,13 @@ func main() {
 	}
 	log.Println("... ok")
 
+}
+
+func loadProfanities() {
+	profanities := os.Getenv("PROFANITIES")
+	if profanities != "" {
+		goaway.DefaultProfanities = append(goaway.DefaultProfanities, strings.Split(profanities, ",")...)
+	}
 }
 
 // Define a map to store all connected clients
@@ -152,8 +162,6 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 }
 
 func censor(str string) string {
-	// todo: extract "goaway" init from this func.
-	goaway.DefaultProfanities = append(goaway.DefaultProfanities, "хуй", "сука", "ублюдок", "пизда", "сучка")
 	str = strings.ReplaceAll(str, "хуй", "***")
 	str = goaway.Censor(str)
 	return str
