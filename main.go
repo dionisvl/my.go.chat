@@ -6,6 +6,7 @@ import (
 	"github.com/TwiN/go-away"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 	"log"
 	"math/rand"
 	"net/http"
@@ -55,7 +56,10 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	err := os.Chdir("/go/src/app")
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
 
 	log.Println("Starting server... ok")
 	log.Println("Starting root route...")
@@ -90,13 +94,6 @@ func main() {
 	}
 	log.Println("... ok")
 
-}
-
-func loadProfanities() {
-	profanities := os.Getenv("PROFANITIES")
-	if profanities != "" {
-		goaway.DefaultProfanities = append(goaway.DefaultProfanities, strings.Split(profanities, ",")...)
-	}
 }
 
 // Define a map to store all connected clients
@@ -161,10 +158,23 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Initialize profanity detector
+var profanityDetector *goaway.ProfanityDetector
+
+func loadProfanities() {
+	// Get profanities from environment variable
+	profanities := os.Getenv("PROFANITIES")
+	log.Println("PROFANITIES: ")
+	log.Println(profanities)
+	customProfanities := strings.Split(profanities, ",")
+	// Create a custom profanity detector
+	profanityDetector = goaway.NewProfanityDetector().WithCustomDictionary(customProfanities, nil, nil)
+}
+
 func censor(str string) string {
+	// Replace specific words and use the profanity detector
 	str = strings.ReplaceAll(str, "хуй", "***")
-	str = goaway.Censor(str)
-	return str
+	return profanityDetector.Censor(str)
 }
 
 // Send the message list to the client

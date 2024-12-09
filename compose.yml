@@ -26,7 +26,6 @@ services:
             - WELCOME_TIMEOUT=${WELCOME_TIMEOUT}
 
 
-
         # uncomment only if you want standalone webChat instance
     #  mysql-chat:
     #    image: mysql:8.1.0
