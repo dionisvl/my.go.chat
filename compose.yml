@@ -1,41 +1,30 @@
 services:
-    web:
-        image: nginx:1.25.2-alpine-slim
-        restart: 'no'
-        ports:
-            - ${NGINX_HOST_PORT}:80
-        volumes:
-            - ./web:/usr/share/nginx/html
-            - ./nginx.conf:/etc/nginx/nginx.conf
-        depends_on:
-            - app
-
-    app:
-        build: .
-        ports:
-            - ${HOST_PORT}:8080
-        volumes:
-            - ${APP_DIR_HOST}:${APP_DIR_CONTAINER}
-        environment:
-            - DB_HOST=${DB_HOST}
-            - DB_PORT=${DB_PORT}
-            - DB_USER=${DB_USER}
-            - DB_PASSWORD=${DB_PASSWORD}
-            - DB_NAME=${DB_NAME}
-            - WELCOME_MESSAGE=${WELCOME_MESSAGE}
-            - WELCOME_TIMEOUT=${WELCOME_TIMEOUT}
+  app:
+    build: .
+    ports:
+      - ${APP_EXTERNAL_PORT}:8080
+    volumes:
+      - ./web:/app/web
+    environment:
+      - DB_HOST=${DB_EXTERNAL_HOST}
+      - DB_PORT=${DB_EXTERNAL_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - WELCOME_MESSAGE=${WELCOME_MESSAGE}
+      - WELCOME_TIMEOUT=${WELCOME_TIMEOUT}
 
 
-        # uncomment only if you want standalone webChat instance
-    #  mysql-chat:
-    #    image: mysql:8.1.0
-    #    restart: 'no'
-    #    environment:
-    #      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    #      MYSQL_DATABASE: ${MYSQL_DATABASE}
-    #    ports:
-    #      - ${MYSQL_HOST_PORT}:3306
-    #    volumes:
-    #      - db_chat_data:/var/lib/mysql
+    # uncomment only if you want standalone webChat instance
+  #  mysql-chat:
+  #    image: mysql:8.1.0
+  #    restart: 'no'
+  #    environment:
+  #      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+  #      MYSQL_DATABASE: ${MYSQL_DATABASE}
+  #    ports:
+  #      - ${DB_EXTERNAL_PORT}:3306
+  #    volumes:
+  #      - db_chat_data:/var/lib/mysql
 #volumes:
 #  db_chat_data:

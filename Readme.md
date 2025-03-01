@@ -5,10 +5,9 @@ This is Websocket super simple chat.
 - GoLang
 - Docker
 - JS/HTML/CSS
-- microservice edition
 
 ## Route list
-- HOST:PORT/ - index page
+- HOST:PORT/ - index HTML client page
 - HOST:PORT/ws - web socket listener
 
 ## How to install
@@ -17,7 +16,16 @@ This is Websocket super simple chat.
 - run migrations
 - Profit!
 
-## Migrations up
+## index HTML client page
+- `http://localhost:8011/`
+
+## WebSocket Usage
+With this setup, your WebSocket server will be available at:
+- `ws://localhost:8011/ws`
+
+Your client JavaScript can automatically use the correct WebSocket protocol (ws:// or wss://) based on how the page was loaded (HTTP or HTTPS).
+
+## Migrations
 - wget https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz
 - tar -zxvf migrate.linux-amd64.tar.gz
 - sudo mv migrate.linux-amd64 /usr/local/bin/migrate
