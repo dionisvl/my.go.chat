@@ -5,10 +5,9 @@ This is Websocket super simple chat.
 - GoLang
 - Docker
 - JS/HTML/CSS
-- microservice edition
 
 ## Route list
-- HOST:PORT/ - index page
+- HOST:PORT/ - index HTML client page
 - HOST:PORT/ws - web socket listener
 
 ## How to install
