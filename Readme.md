@@ -16,6 +16,9 @@ This is Websocket super simple chat.
 - run migrations
 - Profit!
 
+## index HTML client page
+- `http://localhost:8011/`
+
 ## WebSocket Usage
 With this setup, your WebSocket server will be available at:
 - `ws://localhost:8011/ws`
