@@ -200,7 +200,7 @@ func sendMessages(messages []Message, conn *websocket.Conn) {
 func sendWelcome(conn *websocket.Conn) {
 	welcomeMessageText := os.Getenv("WELCOME_MESSAGE")
 	welcomeMsg := Message{
-		Username: "Golang Server",
+		Username: "Server",
 		Message:  welcomeMessageText,
 		Time:     time.Now().Local(),
 		Color:    getRandomColor(),
