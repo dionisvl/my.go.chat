@@ -18,10 +18,9 @@ This is Websocket super simple chat.
 
 ## WebSocket Usage
 With this setup, your WebSocket server will be available at:
-- Development: `ws://localhost:8011/ws`
-- Production: `wss://ws.website.com/ws`
+- `ws://localhost:8011/ws`
 
-Your client JavaScript will automatically use the correct WebSocket protocol (ws:// or wss://) based on how the page was loaded (HTTP or HTTPS).
+Your client JavaScript can automatically use the correct WebSocket protocol (ws:// or wss://) based on how the page was loaded (HTTP or HTTPS).
 
 ## Migrations
 - wget https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz
