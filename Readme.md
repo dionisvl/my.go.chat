@@ -16,7 +16,14 @@ This is Websocket super simple chat.
 - run migrations
 - Profit!
 
-## Migrations up
+## WebSocket Usage
+With this setup, your WebSocket server will be available at:
+- Development: `ws://localhost:8011/ws`
+- Production: `wss://ws.website.com/ws`
+
+Your client JavaScript will automatically use the correct WebSocket protocol (ws:// or wss://) based on how the page was loaded (HTTP or HTTPS).
+
+## Migrations
 - wget https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz
 - tar -zxvf migrate.linux-amd64.tar.gz
 - sudo mv migrate.linux-amd64 /usr/local/bin/migrate

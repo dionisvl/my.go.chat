@@ -126,7 +126,11 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		var msg Message
 		err := conn.ReadJSON(&msg)
 		if err != nil {
-			log.Println("Failed to read message:", err)
+			if websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
+				log.Println("Client disconnected normally")
+			} else {
+				log.Println("Failed to read message:", err)
+			}
 			delete(clients, conn)
 			break
 		}
