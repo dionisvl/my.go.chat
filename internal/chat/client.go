@@ -26,7 +26,7 @@ func SendMessages(messages []Message, conn *websocket.Conn) {
 		err := conn.WriteJSON(msg)
 		if err != nil {
 			log.Println("Failed to send message:", err)
-			delete(Clients, conn)
+			Clients.Remove(conn)
 			break
 		}
 	}
@@ -50,14 +50,16 @@ func SendWelcome(conn *websocket.Conn, welcomeMessage string, timeout int) {
 
 // BroadcastMessage sends a message to all connected clients
 func BroadcastMessage(msg Message) {
-	for client := range Clients {
-		msg.Username = Censor(msg.Username)
-		msg.Message = Censor(msg.Message)
+	clients := Clients.GetAll()
 
+	msg.Username = Censor(msg.Username)
+	msg.Message = Censor(msg.Message)
+
+	for client := range clients {
 		err := client.WriteJSON(msg)
 		if err != nil {
 			log.Println("Failed to broadcast message:", err)
-			delete(Clients, client)
+			Clients.Remove(client)
 		}
 	}
 }

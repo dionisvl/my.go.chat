@@ -25,7 +25,7 @@ func HandleWebSocket(db *sql.DB) http.HandlerFunc {
 		defer conn.Close()
 
 		// Add the client to the list of connected clients
-		chat.Clients[conn] = true
+		chat.Clients.Add(conn)
 
 		// Load the last 50 messages from the database
 		messages, err := database.LoadMessages(db, 50)
@@ -51,7 +51,7 @@ func HandleWebSocket(db *sql.DB) http.HandlerFunc {
 				} else {
 					log.Println("Failed to read message:", err)
 				}
-				delete(chat.Clients, conn)
+				chat.Clients.Remove(conn)
 				break
 			}
 
