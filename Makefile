@@ -1,23 +1,33 @@
-include .env
+COMPOSE := docker compose
+GOOSE_TAGS := no_sqlite3 no_clickhouse no_mssql no_mysql no_vertica no_ydb no_libsql no_duckdb
 
-up: docker-up
-down: docker-down
+help:
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
-r:
-	docker compose up --build -d
-r-app:
-	docker-compose up --no-deps --build app
-r-db:
-	docker-compose up --no-deps --build mysql-chat
+dev:
+	$(COMPOSE) up --build -d
 
-docker-up:
-	docker compose up -d
+up:
+	$(COMPOSE) up -d
 
-docker-down:
-	docker compose down --remove-orphans
+down:
+	$(COMPOSE) down --remove-orphans
+
+logs:
+	$(COMPOSE) logs -f app
 
 sh:
-	docker exec -it mygochat-app-1 sh
+	$(COMPOSE) exec app sh
 
-#migrate:
-#	docker compose run -w $(PROJECT_DIR) --rm app
+build:
+	go build -tags="$(GOOSE_TAGS)" -o bin/mygochat ./cmd/server
+
+test:
+	go test -race ./...
+
+lint:
+	gofmt -w .
+	go vet ./...
+
+tidy:
+	go mod tidy

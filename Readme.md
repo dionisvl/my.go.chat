@@ -1,91 +1,108 @@
 # My Go Chat
 
-A simple WebSocket-based chat application built with Go, MySQL, and Docker.
+A small but production-grade WebSocket chat written in Go. Real-time messaging,
+message history, profanity filtering, structured logging, embedded migrations and
+graceful shutdown — designed to be a "clone-and-run" reference.
 
-## Features
-- Real-time messaging via WebSocket
-- Profanity filtering
-- User color generation
-- Message persistence with MySQL
-- Dockerized deployment
+## Stack
 
-## Tech Stack
-- **Backend**: Go (Golang)
-- **Database**: MySQL
-- **Frontend**: HTML/CSS/JavaScript
-- **Deployment**: Docker & Docker Compose
+- **Language**: Go 1.26
+- **Database**: PostgreSQL 18 (pgx/v5)
+- **Migrations**: Goose v3 (embedded, auto-run on startup)
+- **Routing**: chi v5
+- **Realtime**: gorilla/websocket
+- **Logging**: slog (structured)
+- **Deployment**: Docker multi-stage build + Compose
 
-## API Endpoints
-- `GET /` - Chat client HTML page
-- `WebSocket /ws` - WebSocket connection for real-time messaging
+## Architecture
 
-## Quick Start
-
-1. **Setup environment**:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **Start the application**:
-   ```bash
-   docker-compose up --build
-   ```
-
-3. **Run database migrations**:
-   ```bash
-   migrate -source "file://migrations" -database "mysql://root:password@tcp(localhost:3310)/chat" up
-   ```
-
-4. **Access the application**:
-   - Chat interface: `http://localhost:8011/`
-   - WebSocket endpoint: `ws://localhost:8011/ws`
-
-## Database Migrations
-
-### Install migrate tool
-```bash
-wget https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz
-tar -zxvf migrate.linux-amd64.tar.gz
-sudo mv migrate.linux-amd64 /usr/local/bin/migrate
-sudo chmod +x /usr/local/bin/migrate
+```
+cmd/server/              # entry point — builds App and runs it
+internal/
+├── app/                 # App lifecycle + DI container (wiring, graceful shutdown)
+├── config/              # env-driven configuration
+├── api/
+│   ├── chat/            # websocket handler (upgrade, read loop, history, welcome)
+│   ├── health/          # GET /health
+│   ├── root/            # serves the embedded chat UI
+│   └── middleware/      # slog request logger
+├── chat/                # domain logic: Hub (fan-out) + Service (persist/censor/broadcast)
+├── censor/              # profanity filtering
+├── model/               # Message domain type
+├── repository/message/  # pgx data access (parameterized queries)
+├── platform/dbtx/       # DB interface shared by pool and tx
+├── migrations/          # embedded *.sql goose migrations
+└── pkg/utils/           # color helper
+web/                     # embedded index.html chat client
 ```
 
-### Migration commands
+**Layering**: handler → service → repository. The HTTP/websocket layer never
+touches the database directly; the read/write logic lives in `chat.Service`, and
+SQL lives only in `repository/message`.
+
+**Concurrency**: every websocket connection is owned by a single writer goroutine
+(`Hub.writePump`). Broadcasts and the welcome banner enqueue onto a per-client
+buffered channel rather than writing to the socket directly, so there is never
+more than one concurrent writer per connection. Slow clients whose buffer fills
+are dropped instead of blocking the broadcaster. Verified with `go test -race`.
+
+## API
+
+- `GET /` — chat client HTML
+- `GET /health` — health/version JSON
+- `GET /ws` — WebSocket endpoint
+
+## Quick start
+
 ```bash
-# Create new migration
-migrate create -ext sql -dir migrations -seq migration_name
-
-# Run migrations
-migrate -source "file://migrations" -database "mysql://root:password@tcp(localhost:3310)/chat" up
-
-# Rollback migrations
-migrate -source "file://migrations" -database "mysql://root:password@tcp(localhost:3310)/chat" down
-
-# Fix migration version
-migrate -source "file://migrations" -database "mysql://root:password@tcp(localhost:3310)/chat" force 4
+cp .env.dev.example .env
+make dev          # builds + starts app and postgres
 ```
+
+Open http://localhost:8011/ — migrations run automatically on first boot.
+
+```bash
+make logs         # tail app logs
+make down         # stop everything
+```
+
+## Local development (without Docker)
+
+Point `DB_DSN` at a running Postgres and run:
+
+```bash
+DB_DSN="postgres://chat:chat@localhost:5433/chat?sslmode=disable" make build && ./bin/mygochat
+```
+
+## Configuration
+
+| Env | Default | Description |
+|-----|---------|-------------|
+| `APP_ENV` | `dev` | environment label |
+| `APP_PORT` | `:8080` | listen address (inside container) |
+| `APP_EXTERNAL_PORT` | `8011` | host port mapped to the app |
+| `DB_DSN` | `postgres://chat:chat@db:5432/chat?sslmode=disable` | Postgres connection string |
+| `DB_MAX_CONNS` / `DB_MIN_CONNS` | `10` / `2` | pool sizing |
+| `WELCOME_MESSAGE` | `""` | banner sent to new clients (empty = none) |
+| `WELCOME_TIMEOUT` | `0` | seconds to delay the banner |
+| `PROFANITIES` | `""` | comma-separated extra censored words |
+| `CHAT_HISTORY_LIMIT` | `50` | messages replayed on connect |
+| `CORS_TRUSTED_ORIGINS` | `""` | allowed WS origins (empty = allow all; **set in prod**) |
+| `APP_SHUTDOWN_TIMEOUT` | `10s` | graceful shutdown grace period |
+
+## Migrations
+
+Migrations live in `internal/migrations/*.sql`, are embedded into the binary, and
+run automatically on startup via Goose. Add a new one:
+
+```bash
+# create internal/migrations/0000N_name.sql with -- +goose Up / Down sections
+```
+
+No external `migrate` CLI is required.
 
 ## Testing
+
 ```bash
-# Run all tests
-go test ./...
-
-# Run specific package tests
-go test ./internal/chat
-go test ./internal/database
-go test ./internal/pkg/utils
-```
-
-## Project Structure
-```
-.
-├── cmd/server/          # Application entry point
-├── internal/
-│   ├── chat/           # Chat logic and profanity filtering
-│   ├── database/       # Database operations
-│   ├── handler/        # HTTP and WebSocket handlers
-│   └── pkg/utils/      # Utility functions
-├── migrations/         # Database migrations
-├── web/                # Static files
-└── compose.yml         # Docker configuration
+make test         # go test -race ./...
 ```

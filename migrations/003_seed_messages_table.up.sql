@@ -1,2 +1,0 @@
-INSERT INTO messages (username, message, time) VALUES ('user1', 'Hello, world!', CURRENT_TIMESTAMP());
-INSERT INTO messages (username, message, time) VALUES ('user2', 'How are you?', CURRENT_TIMESTAMP());
