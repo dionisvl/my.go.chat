@@ -1,11 +1,13 @@
 package chat
 
 import (
+	"context"
 	"log/slog"
 	"sync"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 
 	"mygochat/internal/model"
 )
@@ -95,7 +97,7 @@ func (h *Hub) Broadcast(msg model.Message) {
 	for _, c := range clients {
 		if !h.Send(c, msg) {
 			h.Unregister(c)
-			_ = c.conn.Close()
+			_ = c.conn.CloseNow()
 		}
 	}
 }
@@ -106,24 +108,28 @@ func (h *Hub) writePump(c *Client) {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		_ = c.conn.Close()
+		_ = c.conn.CloseNow()
 	}()
 
 	for {
 		select {
 		case msg, ok := <-c.send:
-			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
-				_ = c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = c.conn.Close(websocket.StatusNormalClosure, "")
 				return
 			}
-			if err := c.conn.WriteJSON(msg); err != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), writeWait)
+			err := wsjson.Write(ctx, c.conn, msg)
+			cancel()
+			if err != nil {
 				h.logger.Debug("write failed, closing client", slog.String("error", err.Error()))
 				return
 			}
 		case <-ticker.C:
-			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), writeWait)
+			err := c.conn.Ping(ctx)
+			cancel()
+			if err != nil {
 				return
 			}
 		}

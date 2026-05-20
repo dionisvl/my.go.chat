@@ -4,8 +4,8 @@ go 1.26.2
 
 require (
 	github.com/TwiN/go-away v1.6.15
+	github.com/coder/websocket v1.8.14
 	github.com/go-chi/chi/v5 v5.2.1
-	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/pressly/goose/v3 v3.24.1
 )

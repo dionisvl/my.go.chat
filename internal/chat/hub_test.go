@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
@@ -10,7 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 
 	"mygochat/internal/model"
 )
@@ -23,9 +25,8 @@ func newTestHub() *Hub {
 func dialServer(t *testing.T, hub *Hub) (*websocket.Conn, func()) {
 	t.Helper()
 
-	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		conn, err := upgrader.Upgrade(w, r, nil)
+		conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{InsecureSkipVerify: true})
 		if err != nil {
 			t.Errorf("upgrade: %v", err)
 			return
@@ -34,14 +35,16 @@ func dialServer(t *testing.T, hub *Hub) (*websocket.Conn, func()) {
 	}))
 
 	url := "ws" + strings.TrimPrefix(srv.URL, "http") + "/"
-	client, _, err := websocket.DefaultDialer.Dial(url, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	client, _, err := websocket.Dial(ctx, url, nil)
 	if err != nil {
 		srv.Close()
 		t.Fatalf("dial: %v", err)
 	}
 
 	return client, func() {
-		_ = client.Close()
+		_ = client.CloseNow()
 		srv.Close()
 	}
 }
@@ -57,9 +60,10 @@ func TestHubBroadcastDelivers(t *testing.T) {
 
 	hub.Broadcast(model.Message{Username: "u", Message: "hi", Color: "#fff"})
 
-	_ = client.SetReadDeadline(time.Now().Add(time.Second))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
 	var got model.Message
-	if err := client.ReadJSON(&got); err != nil {
+	if err := wsjson.Read(ctx, client, &got); err != nil {
 		t.Fatalf("read: %v", err)
 	}
 	if got.Message != "hi" {
@@ -70,7 +74,7 @@ func TestHubBroadcastDelivers(t *testing.T) {
 func TestHubUnregisterIsIdempotent(t *testing.T) {
 	hub := newTestHub()
 
-	c := &Client{conn: &websocket.Conn{}, send: make(chan model.Message, 1)}
+	c := &Client{send: make(chan model.Message, 1)}
 	hub.mu.Lock()
 	hub.clients[c] = struct{}{}
 	hub.mu.Unlock()
@@ -89,7 +93,7 @@ func TestHubUnregisterIsIdempotent(t *testing.T) {
 
 func TestHubSendDropsWhenBufferFull(t *testing.T) {
 	hub := newTestHub()
-	c := &Client{conn: &websocket.Conn{}, send: make(chan model.Message, 1)}
+	c := &Client{send: make(chan model.Message, 1)}
 
 	if !hub.Send(c, model.Message{Message: "1"}) {
 		t.Fatal("first send should succeed")

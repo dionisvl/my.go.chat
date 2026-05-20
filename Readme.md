@@ -10,7 +10,7 @@ graceful shutdown — designed to be a "clone-and-run" reference.
 - **Database**: PostgreSQL 18 (pgx/v5)
 - **Migrations**: Goose v3 (embedded, auto-run on startup)
 - **Routing**: chi v5
-- **Realtime**: gorilla/websocket
+- **Realtime**: coder/websocket
 - **Logging**: slog (structured)
 - **Deployment**: Docker multi-stage build + Compose
 
