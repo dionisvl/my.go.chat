@@ -106,3 +106,16 @@ No external `migrate` CLI is required.
 ```bash
 make test         # go test -race ./...
 ```
+
+## Operational behaviour
+
+- `GET /health` exposes application health and version information.
+- Structured request and application logs are emitted through `log/slog`.
+- SIGINT/SIGTERM starts graceful shutdown with a configurable deadline.
+- Database migrations are embedded in the binary and applied during startup.
+
+For a quick demo, run `make dev` and open [localhost:8011](http://localhost:8011/).
+
+## License
+
+MIT — see [LICENSE](LICENSE).
