@@ -38,7 +38,7 @@ jobs:
       run: go build -v ./cmd/server
 
     - name: Security scan with gosec
-      uses: securego/gosec@deb54465fea2cf8529c45a41dfe5009c4ee7bd32
+      uses: securego/gosec@deb54465fea23d19a77f037e11e6589021f8501d
       with:
         args: '-no-fail -fmt sarif -out gosec.sarif ./...'
 
